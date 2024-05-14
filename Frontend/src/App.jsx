@@ -1,28 +1,29 @@
 import React, { useState, useEffect } from 'react'
 import io from 'socket.io-client'
 
-const socket = io('http://localhost:4000')
+// const socket = io('http://localhost:4000')
+const socket = io('https://live-reviews.onrender.com')
 
 const App = () => {
 	const [reviews, setReviews] = useState([])
 	const [newReview, setNewReview] = useState({ title: '', content: '' })
 
 	useEffect(() => {
-    fetchReviews()
+		fetchReviews()
 
-    socket.on('new_review', handleNewReview)
-    socket.on('review_updated', handleReviewUpdated)
-    socket.on('review_deleted', handleReviewDeleted)
+		socket.on('new_review', handleNewReview)
+		socket.on('review_updated', handleReviewUpdated)
+		socket.on('review_deleted', handleReviewDeleted)
 
-    return () => {
-        socket.disconnect()
-    }
-}, [])
+		return () => {
+			socket.disconnect()
+		}
+	}, [])
 
 	const fetchReviews = async () => {
 		try {
 			console.log('trying to fetch')
-			const response = await fetch('http://localhost:4000/reviews')
+			const response = await fetch('https://live-reviews.onrender.com/reviews')
 			if (!response.ok) {
 				throw new Error('Failed to fetch reviews')
 			}
@@ -57,7 +58,7 @@ const App = () => {
 		e.preventDefault()
 		try {
 			const id = reviews.length + 1
-			const response = await fetch('http://localhost:4000/reviews', {
+			const response = await fetch('https://live-reviews.onrender.com/reviews', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -71,6 +72,14 @@ const App = () => {
 			if (!response.ok) {
 				throw new Error('Failed to add review')
 			}
+			socket.emit(
+				'added_review',
+				JSON.stringify({
+					id,
+					title: newReview.title,
+					content: newReview.content,
+				})
+			)
 			setNewReview({ title: '', content: '' })
 		} catch (error) {
 			console.error('Error adding review:', error)
@@ -79,7 +88,7 @@ const App = () => {
 
 	const handleEdit = async (id, updatedReview) => {
 		try {
-			const response = await fetch(`http://localhost:4000/reviews/${id}`, {
+			const response = await fetch(`https://live-reviews.onrender.com/${id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
@@ -96,14 +105,14 @@ const App = () => {
 
 	const handleDelete = async (id) => {
 		try {
-			const response = await fetch(`http://localhost:4000/reviews/${id}`, {
+			const response = await fetch(`https://live-reviews.onrender.com/${id}`, {
 				method: 'DELETE',
 			})
 			if (!response.ok) {
 				throw new Error('Failed to delete review')
 			}
 		} catch (error) {
-			console.error('Error deleting review:', error)
+			console.log('Error deleting review:', error)
 		}
 	}
 

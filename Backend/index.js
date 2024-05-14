@@ -13,8 +13,6 @@ const io = socketIO(server, { cors: { origin: '*' } })
 const PORT = process.env.PORT || 4000
 
 connectToMongoDB().then(() => {
-
-
   app.use(cors())
   app.use(express.json())
 
@@ -45,7 +43,7 @@ connectToMongoDB().then(() => {
         .catch(error => {
           console.error('Error saving review:', error);
         });
-      io.emit('new_review', newReview);
+      // socket.emit('new_review', newReview);
       res.status(201).json({ message: 'Review added successfully' });
     } catch (error) {
       console.error('Error adding review:', error);
@@ -61,7 +59,7 @@ connectToMongoDB().then(() => {
         return res.status(404).json({ message: 'Review not found' });
       }
       res.status(200).json({ message: 'Review updated successfully' });
-      io.emit('review_updated', updatedReview);
+      socket.emit('review_updated', updatedReview);
     } catch (error) {
       console.error('Error updating review:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -76,12 +74,19 @@ connectToMongoDB().then(() => {
         return res.status(404).json({ message: 'Review not found' });
       }
       res.status(200).json({ message: 'Review deleted successfully' });
-      io.emit('review_deleted', deletedReview);
+      socket.emit('review_deleted', deletedReview);
     } catch (error) {
       console.error('Error deleting review:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
+
+  io.on("connection", (socket) => {
+    socket.on("added_review", async (payload) => {
+      console.log("Added a review")
+      socket.broadcast.emit("new_review", payload)
+    })
+  })
 
   server.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`);
