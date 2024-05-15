@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import io from 'socket.io-client'
 
-const socket = io('http://localhost:4000')
+const socket = io('https://live-reviews.onrender.com')
 
 const App = () => {
 	const [reviews, setReviews] = useState([])
@@ -14,15 +14,11 @@ const App = () => {
 		socket.on('new_review', handleNewReview)
 		socket.on('review_updated', handleReviewUpdated)
 		socket.on('review_deleted', handleReviewDeleted)
-
-		return () => {
-			socket.disconnect()
-		}
 	}, [])
 
 	const fetchReviews = async () => {
 		try {
-			const response = await fetch('http://localhost:4000/reviews')
+			const response = await fetch('https://live-reviews.onrender.com/reviews')
 			if (!response.ok) {
 				throw new Error('Failed to fetch reviews')
 			}
@@ -55,7 +51,7 @@ const App = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault()
 		try {
-			const response = await fetch('http://localhost:4000/reviews', {
+			const response = await fetch('https://live-reviews.onrender.com/reviews', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -84,7 +80,7 @@ const App = () => {
 	const handleSaveEdit = async () => {
 		try {
 			const response = await fetch(
-				`http://localhost:4000/reviews/${editReview._id}`,
+				`https://live-reviews.onrender.com/reviews/${editReview._id}`,
 				{
 					method: 'PUT',
 					headers: {
@@ -107,7 +103,7 @@ const App = () => {
 
 	const handleDelete = async (id) => {
 		try {
-			const response = await fetch(`http://localhost:4000/reviews/${id}`, {
+			const response = await fetch(`https://live-reviews.onrender.com/reviews/${id}`, {
 				method: 'DELETE',
 			})
 			if (!response.ok) {
