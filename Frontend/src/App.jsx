@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import io from 'socket.io-client'
 
-// const socket = io('http://localhost:4000')
-const socket = io('https://live-reviews.onrender.com')
+const socket = io('http://localhost:4000')
 
 const App = () => {
 	const [reviews, setReviews] = useState([])
 	const [newReview, setNewReview] = useState({ title: '', content: '' })
+	const [editReview, setEditReview] = useState(null)
 
 	useEffect(() => {
 		fetchReviews()
@@ -22,8 +22,7 @@ const App = () => {
 
 	const fetchReviews = async () => {
 		try {
-			console.log('trying to fetch')
-			const response = await fetch('https://live-reviews.onrender.com/reviews')
+			const response = await fetch('http://localhost:4000/reviews')
 			if (!response.ok) {
 				throw new Error('Failed to fetch reviews')
 			}
@@ -35,7 +34,6 @@ const App = () => {
 	}
 
 	const handleNewReview = (newReview) => {
-		// console.log(newReview)
 		setReviews((prevReviews) => [newReview, ...prevReviews])
 	}
 
@@ -45,10 +43,10 @@ const App = () => {
 				review._id === updatedReview._id ? updatedReview : review
 			)
 		)
+		setEditReview(null)
 	}
 
 	const handleReviewDeleted = (deletedReview) => {
-		console.log('Socket kaam kar raha hai')
 		setReviews((prevReviews) =>
 			prevReviews.filter((review) => review._id !== deletedReview._id)
 		)
@@ -57,44 +55,44 @@ const App = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault()
 		try {
-			const id = reviews.length + 1
-			const response = await fetch('https://live-reviews.onrender.com/reviews', {
+			const response = await fetch('http://localhost:4000/reviews', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					id,
-					title: newReview.title,
-					content: newReview.content,
+					...newReview,
+					dateTime: new Date().toISOString(),
 				}),
 			})
 			if (!response.ok) {
 				throw new Error('Failed to add review')
 			}
-			socket.emit(
-				'added_review',
-				JSON.stringify({
-					id,
-					title: newReview.title,
-					content: newReview.content,
-				})
-			)
 			setNewReview({ title: '', content: '' })
 		} catch (error) {
 			console.error('Error adding review:', error)
 		}
 	}
 
-	const handleEdit = async (id, updatedReview) => {
+	const handleEdit = (review) => {
+		setEditReview({
+			...review,
+			dateTime: new Date().toISOString(),
+		})
+	}
+
+	const handleSaveEdit = async () => {
 		try {
-			const response = await fetch(`https://live-reviews.onrender.com/${id}`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(updatedReview),
-			})
+			const response = await fetch(
+				`http://localhost:4000/reviews/${editReview._id}`,
+				{
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(editReview),
+				}
+			)
 			if (!response.ok) {
 				throw new Error('Failed to update review')
 			}
@@ -103,16 +101,20 @@ const App = () => {
 		}
 	}
 
+	const handleCancelEdit = () => {
+		setEditReview(null)
+	}
+
 	const handleDelete = async (id) => {
 		try {
-			const response = await fetch(`https://live-reviews.onrender.com/${id}`, {
+			const response = await fetch(`http://localhost:4000/reviews/${id}`, {
 				method: 'DELETE',
 			})
 			if (!response.ok) {
 				throw new Error('Failed to delete review')
 			}
 		} catch (error) {
-			console.log('Error deleting review:', error)
+			console.error('Error deleting review:', error)
 		}
 	}
 
@@ -157,20 +159,41 @@ const App = () => {
 					{reviews.map((review, index) => (
 						<tr key={review._id}>
 							<td>{index + 1}</td>
-							<td>{review.title}</td>
-							<td>{review.content}</td>
-							<td>{new Date(review.createdAt).toLocaleString()}</td>
 							<td>
-								<button
-									onClick={() =>
-										handleEdit(review._id, {
-											title: 'Updated Title',
-											content: 'Updated Content',
-										})
-									}
-								>
-									Edit
-								</button>
+								{editReview && editReview._id === review._id ? (
+									<input
+										type="text"
+										value={editReview.title}
+										onChange={(e) =>
+											setEditReview({ ...editReview, title: e.target.value })
+										}
+									/>
+								) : (
+									review.title
+								)}
+							</td>
+							<td>
+								{editReview && editReview._id === review._id ? (
+									<textarea
+										value={editReview.content}
+										onChange={(e) =>
+											setEditReview({ ...editReview, content: e.target.value })
+										}
+									></textarea>
+								) : (
+									review.content
+								)}
+							</td>
+							<td>{new Date(review.dateTime).toLocaleString()}</td>{' '}
+							<td>
+								{editReview && editReview._id === review._id ? (
+									<>
+										<button onClick={handleSaveEdit}>Save</button>
+										<button onClick={handleCancelEdit}>Cancel</button>
+									</>
+								) : (
+									<button onClick={() => handleEdit(review)}>Edit</button>
+								)}
 							</td>
 							<td>
 								<button onClick={() => handleDelete(review._id)}>Delete</button>
