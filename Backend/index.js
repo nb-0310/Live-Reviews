@@ -81,12 +81,12 @@ connectToMongoDB().then(() => {
     }
   });
 
-  io.on("connection", (socket) => {
-    socket.on("added_review", async (payload) => {
-      console.log("Added a review")
-      socket.broadcast.emit("new_review", payload)
-    })
-  })
+  // io.on("connection", (socket) => {
+  //   socket.on("added_review", async (payload) => {
+  //     console.log("Added a review")
+  //     socket.broadcast.emit("new_review", payload)
+  //   })
+  // })
 
   server.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`);
